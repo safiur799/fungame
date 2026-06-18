@@ -1,5 +1,5 @@
 import { Collection, Document, Filter, WithId } from "mongodb";
-import { DEFAULT_GAME_ID } from "./games";
+import { DEFAULT_GAME_ID, DEFAULT_GAME_NAME } from "./games";
 import { getDb } from "./mongodb";
 import type { PaginatedResults, Result } from "@/types/result";
 
@@ -20,7 +20,7 @@ async function ensureIndexes(collection: Collection<ResultDocument>) {
     indexesReady = (async () => {
       await collection.updateMany(
         { gameId: { $exists: false } },
-        { $set: { gameId: DEFAULT_GAME_ID, gameName: "Daily Number Draw" } }
+        { $set: { gameId: DEFAULT_GAME_ID, gameName: DEFAULT_GAME_NAME } }
       );
       const indexes = await collection.indexes();
       const oldUnique = indexes.find((index) => index.name === "drawNumber_1" && index.unique);
@@ -49,7 +49,7 @@ export function serializeResult(doc: WithId<ResultDocument> | ResultDocument): R
   return {
     id: doc.id,
     gameId: doc.gameId || DEFAULT_GAME_ID,
-    gameName: doc.gameName || "Daily Number Draw",
+    gameName: doc.gameId === DEFAULT_GAME_ID || !doc.gameId ? DEFAULT_GAME_NAME : doc.gameName,
     drawNumber: doc.drawNumber,
     winningNumber: doc.winningNumber,
     drawTime: doc.drawTime.toISOString(),

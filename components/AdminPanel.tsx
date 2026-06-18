@@ -8,6 +8,28 @@ type GamesResponse = {
   games: Game[];
 };
 
+const DEFAULT_GAME_ID = "main";
+type ResultMode = "random" | "manual";
+type PublishDraft = {
+  drawDate: string;
+  drawClockTime: string;
+  resultMode: ResultMode;
+  winningNumber: string;
+};
+
+const EMPTY_PUBLISH_DRAFT: PublishDraft = {
+  drawDate: "",
+  drawClockTime: "",
+  resultMode: "random",
+  winningNumber: ""
+};
+
+function todayDateInputValue() {
+  const date = new Date();
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
+  return local.toISOString().slice(0, 10);
+}
+
 function toDatetimeLocal(value: string) {
   const date = new Date(value);
   const local = new Date(date.getTime() - date.getTimezoneOffset() * 60_000);
@@ -26,13 +48,13 @@ export function AdminPanel({ isAdmin }: { isAdmin: boolean }) {
   const [gameMax, setGameMax] = useState("100");
   const [gameTimes, setGameTimes] = useState<string[]>(["10:00"]);
   const [newGameTime, setNewGameTime] = useState("");
-  const [drawTime, setDrawTime] = useState("");
-  const [winningNumber, setWinningNumber] = useState("");
+  const [publishDrafts, setPublishDrafts] = useState<Record<string, PublishDraft>>({});
   const [editingResult, setEditingResult] = useState<Result | null>(null);
   const [editDrawTime, setEditDrawTime] = useState("");
   const [editWinningNumber, setEditWinningNumber] = useState("");
   const [loading, setLoading] = useState(false);
   const activeGames = games.filter((game) => game.active);
+  const isDefaultGameSelected = selectedGameId === DEFAULT_GAME_ID;
 
   const loadResults = useCallback(async () => {
     const response = await fetch(`/api/admin/results?gameId=${encodeURIComponent(selectedGameId)}`, { cache: "no-store" });
@@ -90,19 +112,39 @@ export function AdminPanel({ isAdmin }: { isAdmin: boolean }) {
     setPassword("");
   }
 
-  async function createResult(event: React.FormEvent) {
+  function getPublishDraft(game: Game) {
+    const draft = publishDrafts[game.id] || EMPTY_PUBLISH_DRAFT;
+    return {
+      ...draft,
+      drawDate: draft.drawDate || todayDateInputValue(),
+      drawClockTime: draft.drawClockTime || game.drawTimes[0] || ""
+    };
+  }
+
+  function updatePublishDraft(gameId: string, patch: Partial<PublishDraft>) {
+    setPublishDrafts((current) => ({
+      ...current,
+      [gameId]: {
+        ...(current[gameId] || EMPTY_PUBLISH_DRAFT),
+        ...patch
+      }
+    }));
+  }
+
+  async function publishResult(event: React.FormEvent, game: Game) {
     event.preventDefault();
-    if (selectedGameId === "new") {
-      setMessage("Save the new game before publishing a result");
-      return;
-    }
+    const draft = getPublishDraft(game);
     setLoading(true);
     setMessage("");
-    const isoDrawTime = new Date(drawTime).toISOString();
+    const isoDrawTime = new Date(`${draft.drawDate}T${draft.drawClockTime}`).toISOString();
     const response = await fetch("/api/admin/results", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ gameId: selectedGameId, drawTime: isoDrawTime, winningNumber })
+      body: JSON.stringify({
+        gameId: game.id,
+        drawTime: isoDrawTime,
+        winningNumber: draft.resultMode === "manual" ? draft.winningNumber : ""
+      })
     });
     const data = await response.json();
     setLoading(false);
@@ -110,10 +152,9 @@ export function AdminPanel({ isAdmin }: { isAdmin: boolean }) {
       setMessage(data.error || "Unable to publish result");
       return;
     }
-    setMessage(`Published draw ${data.drawNumber}`);
-    setDrawTime("");
-    setWinningNumber("");
-    await loadResults();
+    setMessage(`Published ${game.name} draw ${data.drawNumber}`);
+    updatePublishDraft(game.id, EMPTY_PUBLISH_DRAFT);
+    if (selectedGameId === game.id) await loadResults();
   }
 
   function addGameTime() {
@@ -170,7 +211,7 @@ export function AdminPanel({ isAdmin }: { isAdmin: boolean }) {
   }
 
   async function removeGameById(gameId: string, name: string) {
-    if (gameId === "main" || gameId === "new") return;
+    if (gameId === DEFAULT_GAME_ID || gameId === "new") return;
     if (!window.confirm(`Remove ${name} from active game rooms?`)) return;
     setLoading(true);
     setMessage("");
@@ -182,7 +223,7 @@ export function AdminPanel({ isAdmin }: { isAdmin: boolean }) {
       return;
     }
     setMessage("Game removed");
-    setSelectedGameId("main");
+    setSelectedGameId(DEFAULT_GAME_ID);
     await loadGames();
     await loadResults();
   }
@@ -296,7 +337,7 @@ export function AdminPanel({ isAdmin }: { isAdmin: boolean }) {
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
           <div>
             <h2 className="text-xl font-black">Game Manager</h2>
-            <p className="mt-1 text-sm text-white/60">Create rooms like 1-100, add short result times, or remove rooms.</p>
+            <p className="mt-1 text-sm text-white/60">Default 1-1000 stays fixed. Add separate rooms with their own ranges and result times.</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <button
@@ -309,7 +350,7 @@ export function AdminPanel({ isAdmin }: { isAdmin: boolean }) {
             <button
               type="button"
               onClick={removeSelectedGame}
-              disabled={loading || selectedGameId === "main" || selectedGameId === "new"}
+              disabled={loading || selectedGameId === DEFAULT_GAME_ID || selectedGameId === "new"}
               className="rounded-lg border border-red-400/30 px-4 py-3 text-sm font-black text-red-200 hover:bg-red-500/10 disabled:opacity-40"
             >
               Remove Selected
@@ -324,7 +365,14 @@ export function AdminPanel({ isAdmin }: { isAdmin: boolean }) {
               <div key={game.id} className="rounded-lg border border-white/10 bg-ink/70 p-4">
                 <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start">
                   <div>
-                    <h3 className="font-black text-white">{game.name}</h3>
+                    <h3 className="font-black text-white">
+                      {game.name}
+                      {game.id === DEFAULT_GAME_ID && (
+                        <span className="ml-2 rounded border border-gold/25 px-2 py-1 text-[10px] font-black uppercase tracking-[0.12em] text-gold">
+                          Fixed
+                        </span>
+                      )}
+                    </h3>
                     <p className="mt-1 text-sm text-white/55">
                       Range {game.minNumber} to {game.maxNumber} · Times {game.drawTimes.join(", ")}
                     </p>
@@ -340,7 +388,7 @@ export function AdminPanel({ isAdmin }: { isAdmin: boolean }) {
                     <button
                       type="button"
                       onClick={() => removeGameById(game.id, game.name)}
-                      disabled={loading || game.id === "main"}
+                      disabled={loading || game.id === DEFAULT_GAME_ID}
                       className="rounded-md border border-red-400/30 px-3 py-2 text-xs font-black text-red-200 hover:bg-red-500/10 disabled:opacity-40"
                     >
                       Remove
@@ -374,6 +422,7 @@ export function AdminPanel({ isAdmin }: { isAdmin: boolean }) {
               <input
                 value={gameName}
                 onChange={(event) => setGameName(event.target.value)}
+                disabled={isDefaultGameSelected}
                 className="mt-2 w-full rounded-lg border border-white/10 bg-ink px-3 py-3 text-white outline-none ring-neon/40 focus:ring-2"
               />
             </label>
@@ -383,6 +432,7 @@ export function AdminPanel({ isAdmin }: { isAdmin: boolean }) {
                 value={gameMin}
                 onChange={(event) => setGameMin(event.target.value.replace(/\D/g, ""))}
                 inputMode="numeric"
+                disabled={isDefaultGameSelected}
                 className="mt-2 w-full rounded-lg border border-white/10 bg-ink px-3 py-3 font-mono text-white outline-none ring-neon/40 focus:ring-2"
               />
             </label>
@@ -392,6 +442,7 @@ export function AdminPanel({ isAdmin }: { isAdmin: boolean }) {
                 value={gameMax}
                 onChange={(event) => setGameMax(event.target.value.replace(/\D/g, ""))}
                 inputMode="numeric"
+                disabled={isDefaultGameSelected}
                 className="mt-2 w-full rounded-lg border border-white/10 bg-ink px-3 py-3 font-mono text-white outline-none ring-neon/40 focus:ring-2"
               />
             </label>
@@ -409,6 +460,7 @@ export function AdminPanel({ isAdmin }: { isAdmin: boolean }) {
                 type="button"
                 className="text-white/70 hover:text-white"
                 onClick={() => removeGameTime(time)}
+                disabled={isDefaultGameSelected}
                 aria-label={`Remove ${time}`}
               >
                 x
@@ -423,12 +475,14 @@ export function AdminPanel({ isAdmin }: { isAdmin: boolean }) {
               value={newGameTime}
               onChange={(event) => setNewGameTime(event.target.value)}
               type="time"
+              disabled={isDefaultGameSelected}
               className="mt-2 w-full rounded-lg border border-white/10 bg-ink px-3 py-3 text-white outline-none ring-neon/40 focus:ring-2"
             />
           </label>
           <button
             type="button"
             onClick={addGameTime}
+            disabled={isDefaultGameSelected}
             className="rounded-lg border border-neon/30 px-5 py-3 font-black text-neon hover:bg-neon/10"
           >
             Add Time
@@ -437,6 +491,7 @@ export function AdminPanel({ isAdmin }: { isAdmin: boolean }) {
             <button
               type="button"
               onClick={() => addQuickGameTime(5)}
+              disabled={isDefaultGameSelected}
               className="rounded-lg border border-white/10 px-4 py-3 text-sm font-black text-white/80 hover:bg-white/10"
             >
               +5 Min
@@ -444,6 +499,7 @@ export function AdminPanel({ isAdmin }: { isAdmin: boolean }) {
             <button
               type="button"
               onClick={() => addQuickGameTime(15)}
+              disabled={isDefaultGameSelected}
               className="rounded-lg border border-white/10 px-4 py-3 text-sm font-black text-white/80 hover:bg-white/10"
             >
               +15 Min
@@ -453,7 +509,7 @@ export function AdminPanel({ isAdmin }: { isAdmin: boolean }) {
         <div className="mt-4 flex justify-end">
           <button
             type="button"
-            disabled={loading || gameTimes.length === 0}
+            disabled={loading || gameTimes.length === 0 || isDefaultGameSelected}
             onClick={saveGame}
             className="rounded-lg bg-hot px-5 py-3 font-black text-white hover:brightness-110 disabled:opacity-60"
           >
@@ -462,43 +518,99 @@ export function AdminPanel({ isAdmin }: { isAdmin: boolean }) {
         </div>
       </section>
 
-      <form onSubmit={createResult} className="rounded-xl border border-white/10 bg-panel/80 p-5">
-        <h2 className="text-xl font-black">Create / Publish Result Anytime</h2>
-        <p className="mt-1 text-sm text-white/60">
-          Selected game: <span className="font-bold text-neon">{gameName}</span>. Leave winning number blank for auto.
-        </p>
-        <div className="mt-4 grid gap-4 md:grid-cols-[1fr_180px_auto] md:items-end">
-          <label className="block">
-            <span className="text-sm font-bold text-white/70">Draw time</span>
-            <input
-              value={drawTime}
-              onChange={(event) => setDrawTime(event.target.value)}
-              type="datetime-local"
-              required
-              className="mt-2 w-full rounded-lg border border-white/10 bg-ink px-3 py-3 text-white outline-none ring-neon/40 focus:ring-2"
-            />
-          </label>
-          <label className="block">
-            <span className="text-sm font-bold text-white/70">Winning number</span>
-            <input
-              value={winningNumber}
-              onChange={(event) => setWinningNumber(event.target.value.replace(/\D/g, "").slice(0, 8))}
-              inputMode="numeric"
-              placeholder="Auto"
-              pattern="\d{1,8}"
-              className="mt-2 w-full rounded-lg border border-white/10 bg-ink px-3 py-3 font-mono text-white outline-none ring-neon/40 focus:ring-2"
-            />
-          </label>
-          <button
-            disabled={loading || selectedGameId === "new"}
-            className="rounded-lg bg-hot px-5 py-3 font-black text-white shadow-hot hover:brightness-110 disabled:opacity-60"
-            type="submit"
-          >
-            Publish
-          </button>
+      <section className="rounded-xl border border-white/10 bg-panel/80 p-5">
+        <h2 className="text-xl font-black">Publish Result For Each Game</h2>
+        <p className="mt-1 text-sm text-white/60">Each active game has its own draw time, random result, or manual winning number.</p>
+        <div className="mt-4 grid gap-4">
+          {activeGames.map((game) => {
+            const draft = getPublishDraft(game);
+            return (
+              <form
+                key={game.id}
+                onSubmit={(event) => publishResult(event, game)}
+                className="rounded-lg border border-white/10 bg-ink/75 p-4"
+              >
+                <div className="flex flex-col justify-between gap-2 sm:flex-row sm:items-start">
+                  <div>
+                    <h3 className="font-black text-white">{game.name}</h3>
+                    <p className="mt-1 text-sm text-white/55">
+                      Range {game.minNumber} to {game.maxNumber} · Times {game.drawTimes.join(", ")}
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setSelectedGameId(game.id)}
+                    className="rounded-md border border-neon/30 px-3 py-2 text-xs font-black text-neon hover:bg-neon/10"
+                  >
+                    View History
+                  </button>
+                </div>
+                <div className="mt-4 grid gap-4 md:grid-cols-[1fr_160px_220px_180px_auto] md:items-end">
+                  <label className="block">
+                    <span className="text-sm font-bold text-white/70">Draw date</span>
+                    <input
+                      value={draft.drawDate}
+                      onChange={(event) => updatePublishDraft(game.id, { drawDate: event.target.value })}
+                      type="date"
+                      required
+                      className="mt-2 w-full rounded-lg border border-white/10 bg-ink px-3 py-3 text-white outline-none ring-neon/40 focus:ring-2"
+                    />
+                  </label>
+                  <label className="block">
+                    <span className="text-sm font-bold text-white/70">Result time</span>
+                    <select
+                      value={draft.drawClockTime}
+                      onChange={(event) => updatePublishDraft(game.id, { drawClockTime: event.target.value })}
+                      required
+                      className="mt-2 w-full rounded-lg border border-white/10 bg-ink px-3 py-3 text-white outline-none ring-neon/40 focus:ring-2"
+                    >
+                      {game.drawTimes.map((time) => (
+                        <option key={time} value={time}>
+                          {time}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label className="block">
+                    <span className="text-sm font-bold text-white/70">Result type</span>
+                    <select
+                      value={draft.resultMode}
+                      onChange={(event) => updatePublishDraft(game.id, { resultMode: event.target.value as ResultMode })}
+                      className="mt-2 w-full rounded-lg border border-white/10 bg-ink px-3 py-3 text-white outline-none ring-neon/40 focus:ring-2"
+                    >
+                      <option value="random">Random number</option>
+                      <option value="manual">Manual winning number</option>
+                    </select>
+                  </label>
+                  <label className="block">
+                    <span className="text-sm font-bold text-white/70">Winning number</span>
+                    <input
+                      value={draft.winningNumber}
+                      onChange={(event) =>
+                        updatePublishDraft(game.id, { winningNumber: event.target.value.replace(/\D/g, "").slice(0, 8) })
+                      }
+                      inputMode="numeric"
+                      placeholder={draft.resultMode === "manual" ? `${game.minNumber}-${game.maxNumber}` : "Random"}
+                      pattern={draft.resultMode === "manual" ? "\\d{1,8}" : undefined}
+                      required={draft.resultMode === "manual"}
+                      disabled={draft.resultMode === "random"}
+                      className="mt-2 w-full rounded-lg border border-white/10 bg-ink px-3 py-3 font-mono text-white outline-none ring-neon/40 focus:ring-2"
+                    />
+                  </label>
+                  <button
+                    disabled={loading}
+                    className="rounded-lg bg-hot px-5 py-3 font-black text-white shadow-hot hover:brightness-110 disabled:opacity-60"
+                    type="submit"
+                  >
+                    Publish
+                  </button>
+                </div>
+              </form>
+            );
+          })}
         </div>
         {message && <p className="mt-4 text-sm text-gold">{message}</p>}
-      </form>
+      </section>
 
       {editingResult && (
         <form onSubmit={updateResult} className="rounded-xl border border-gold/20 bg-gold/10 p-5">

@@ -37,14 +37,14 @@ export default async function HomePage() {
             Choose your lucky number.
           </h1>
           <p className="mt-4 max-w-xl text-base leading-7 text-white/68">
-            Pick any number from 0 to 10000, save it on this device, and check the live result when the countdown ends.
+            Pick any number from the default 1 to 1000 room, or choose another room with its own range and result time.
           </p>
           <div className="mt-5 flex flex-wrap gap-2">
             <span className="rounded-md border border-neon/25 bg-neon/10 px-3 py-2 text-xs font-black uppercase tracking-[0.12em] text-neon">
-              0 - 10000
+              1 - 1000 default
             </span>
             <span className="rounded-md border border-hot/25 bg-hot/10 px-3 py-2 text-xs font-black uppercase tracking-[0.12em] text-hot">
-              4 draws daily
+              fixed daily room
             </span>
             <span className="rounded-md border border-gold/25 bg-gold/10 px-3 py-2 text-xs font-black uppercase tracking-[0.12em] text-gold">
               Just for fun
@@ -67,7 +67,11 @@ export default async function HomePage() {
           </div>
         </div>
         <div className="space-y-4">
-          <NumberDisplay value={status.latest?.winningNumber} label="Latest Winning Number" />
+          <NumberDisplay
+            value={status.latest?.winningNumber}
+            label="Latest Winning Number"
+            gameName={status.latest?.gameName || status.game.name}
+          />
           <div className="rounded-xl border border-white/10 bg-panel/75 p-5">
             <p className="text-xs font-bold uppercase tracking-[0.22em] text-white/45">Countdown</p>
             <div className="mt-4">
@@ -95,7 +99,7 @@ export default async function HomePage() {
           <h2 className="mt-2 text-2xl font-black text-white">Simple game flow</h2>
           <div className="mt-5 grid gap-3 sm:grid-cols-3">
             {[
-              ["1", "Pick", "Select any number from 0 to 10000."],
+              ["1", "Pick", "Select a number inside the room range."],
               ["2", "Save", "Lock the number on your phone or computer."],
               ["3", "Match", "Check the result after the countdown ends."]
             ].map(([step, title, text]) => (

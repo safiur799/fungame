@@ -1,13 +1,21 @@
 import { randomInt, randomUUID } from "crypto";
 import { MongoServerError } from "mongodb";
 import { env } from "./env";
-import { DEFAULT_GAME_ID, getGameById, listGames, serializeGame, type GameDocument } from "./games";
+import {
+  DEFAULT_GAME_ID,
+  DEFAULT_MAX_NUMBER,
+  DEFAULT_MIN_NUMBER,
+  getGameById,
+  listGames,
+  serializeGame,
+  type GameDocument
+} from "./games";
 import { logger } from "./logger";
 import { resultsCollection, serializeResult } from "./results";
 import type { CurrentDrawStatus, Result } from "@/types/result";
 
-export const MIN_WINNING_NUMBER = 0;
-export const MAX_WINNING_NUMBER = 10000;
+export const MIN_WINNING_NUMBER = DEFAULT_MIN_NUMBER;
+export const MAX_WINNING_NUMBER = DEFAULT_MAX_NUMBER;
 
 function getParts(date: Date, timeZone = env.drawTimezone) {
   const parts = new Intl.DateTimeFormat("en-CA", {

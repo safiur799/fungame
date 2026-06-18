@@ -3,9 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 
 function clampNumber(value: string) {
-  const digits = value.replace(/\D/g, "").slice(0, 5);
+  const digits = value.replace(/\D/g, "").slice(0, 4);
   if (!digits) return "";
-  return String(Math.min(10000, Number(digits)));
+  return String(Math.min(1000, Math.max(1, Number(digits))));
 }
 
 export function LuckyNumberPicker() {
@@ -13,14 +13,14 @@ export function LuckyNumberPicker() {
   const [savedNumber, setSavedNumber] = useState("");
   const [copied, setCopied] = useState(false);
 
-  const displayNumber = useMemo(() => number || "0", [number]);
+  const displayNumber = useMemo(() => number || "1", [number]);
 
   useEffect(() => {
     setSavedNumber(window.localStorage.getItem("daily-draw-pick") || "");
   }, []);
 
   function quickPick() {
-    setNumber(String(Math.floor(Math.random() * 10001)));
+    setNumber(String(1 + Math.floor(Math.random() * 1000)));
   }
 
   function savePick() {
@@ -42,7 +42,7 @@ export function LuckyNumberPicker() {
           <h2 className="mt-2 text-2xl font-black text-white">Lock your lucky number</h2>
         </div>
         <span className="rounded-md border border-gold/30 bg-gold/10 px-3 py-2 text-xs font-black uppercase tracking-[0.12em] text-gold">
-          0-10000
+          1-1000
         </span>
       </div>
 
@@ -67,7 +67,7 @@ export function LuckyNumberPicker() {
           value={number}
           onChange={(event) => setNumber(clampNumber(event.target.value))}
           inputMode="numeric"
-          placeholder="0"
+          placeholder="1"
           className="mt-2 w-full rounded-lg border border-white/10 bg-ink px-3 py-3 text-center font-mono text-2xl font-black text-white outline-none ring-hot/40 focus:ring-2"
         />
       </label>
