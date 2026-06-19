@@ -124,6 +124,20 @@ export default async function HomePage() {
             Tip: use Quick Pick for a random number, or type your own favorite number before the timer ends.
           </div>
         </div>
+        <div className="rounded-xl border border-neon/20 bg-panel/75 p-5">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-xs font-black uppercase tracking-[0.22em] text-neon">Offline party game</p>
+              <h2 className="mt-2 text-2xl font-black text-white">Play with 5 to 500 people</h2>
+              <p className="mt-2 max-w-2xl text-sm leading-6 text-white/58">
+                Run simple group games from one device for classrooms, events, families, or local groups.
+              </p>
+            </div>
+            <Link className="rounded-lg bg-neon px-5 py-3 text-center font-black text-ink hover:brightness-110" href="/party-game">
+              Open Party Game
+            </Link>
+          </div>
+        </div>
       </section>
 
       <section className="space-y-4">

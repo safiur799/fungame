@@ -8,6 +8,9 @@ export function SiteHeader() {
           Daily<span className="text-neon">Number</span>Draw
         </Link>
         <div className="flex items-center gap-2 text-sm font-semibold text-white/70">
+          <Link className="rounded-md px-3 py-2 hover:bg-white/10 hover:text-white" href="/party-game">
+            Party Game
+          </Link>
           <Link className="rounded-md px-3 py-2 hover:bg-white/10 hover:text-white" href="/results">
             Results
           </Link>
