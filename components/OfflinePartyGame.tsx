@@ -2,7 +2,14 @@
 
 import { useMemo, useState } from "react";
 
-type Mode = "lucky-seat" | "elimination" | "team-battle" | "bingo-lite";
+type Mode =
+  | "lucky-seat"
+  | "elimination"
+  | "team-battle"
+  | "bingo-lite"
+  | "mystery-box"
+  | "number-ladder"
+  | "hot-seat";
 
 type Player = {
   number: number;
@@ -22,8 +29,28 @@ const MODES: Array<{ id: Mode; title: string; detail: string }> = [
   { id: "lucky-seat", title: "Lucky Seat Draw", detail: "Draw one lucky seat from the room." },
   { id: "elimination", title: "Elimination", detail: "Remove numbers until one remains." },
   { id: "team-battle", title: "Team Battle", detail: "Random players score points for teams." },
-  { id: "bingo-lite", title: "Bingo Lite", detail: "Host calls numbers and players use cards." }
+  { id: "bingo-lite", title: "Bingo Lite", detail: "Host calls numbers and players use cards." },
+  { id: "mystery-box", title: "Mystery Box", detail: "Open a box to reveal a surprise winner." },
+  { id: "number-ladder", title: "Number Ladder", detail: "Players climb until someone reaches the top." },
+  { id: "hot-seat", title: "Hot Seat Pass", detail: "Pass between numbers and reveal the final holder." }
 ];
+
+const MYSTERY_BOX_LABELS = [
+  "Gold Box",
+  "Neon Box",
+  "Lucky Box",
+  "Bonus Box",
+  "Star Box",
+  "Power Box",
+  "Flash Box",
+  "Champion Box",
+  "Magic Box",
+  "Winner Box",
+  "Hero Box",
+  "Final Box"
+];
+
+const MYSTERY_REWARDS = ["Applause Round", "Bonus Point", "Team Choice", "Lucky Star", "Host Pick", "Champion Badge"];
 
 function makePlayers(count: number, namesText: string) {
   const names = namesText
@@ -124,6 +151,18 @@ export function OfflinePartyGame() {
   const [calledNumbers, setCalledNumbers] = useState<number[]>([]);
   const [cardPlayer, setCardPlayer] = useState(1);
 
+  const [openBox, setOpenBox] = useState<number | null>(null);
+  const [boxWinner, setBoxWinner] = useState<Player | null>(null);
+  const [boxReward, setBoxReward] = useState("");
+
+  const [ladderScores, setLadderScores] = useState<number[]>([]);
+  const [ladderWinner, setLadderWinner] = useState<Player | null>(null);
+  const [ladderHistory, setLadderHistory] = useState<string[]>([]);
+
+  const [hotSeatWinner, setHotSeatWinner] = useState<Player | null>(null);
+  const [hotSeatPasses, setHotSeatPasses] = useState(0);
+  const [hotSeatPath, setHotSeatPath] = useState<Player[]>([]);
+
   const players = useMemo(() => makePlayers(playerCount, namesText), [namesText, playerCount]);
   const modeMeta = MODES.find((item) => item.id === mode) || MODES[0];
   const activeElimination = eliminationPool.map((number) => players[number - 1]).filter(Boolean);
@@ -131,6 +170,7 @@ export function OfflinePartyGame() {
   const bingoCard = useMemo(() => makeBingoCard(cardPlayer), [cardPlayer]);
   const bingoWin = useMemo(() => getBingoWin(bingoCard, calledNumbers), [bingoCard, calledNumbers]);
   const bingoWinner = players[cardPlayer - 1];
+  const activeLadderScores = ladderScores.length === playerCount ? ladderScores : Array.from({ length: playerCount }, () => 0);
 
   function updatePlayerCount(value: number) {
     const nextCount = Math.min(500, Math.max(5, value));
@@ -148,6 +188,15 @@ export function OfflinePartyGame() {
     setTeamScores(Array.from({ length: teamCount }, () => 0));
     setBattleHistory([]);
     setCalledNumbers([]);
+    setOpenBox(null);
+    setBoxWinner(null);
+    setBoxReward("");
+    setLadderScores([]);
+    setLadderWinner(null);
+    setLadderHistory([]);
+    setHotSeatWinner(null);
+    setHotSeatPasses(0);
+    setHotSeatPath([]);
   }
 
   function selectMode(nextMode: Mode) {
@@ -208,6 +257,43 @@ export function OfflinePartyGame() {
     if (calledNumbers.length >= 75) return;
     const remaining = Array.from({ length: 75 }, (_, index) => index + 1).filter((number) => !calledNumbers.includes(number));
     setCalledNumbers((items) => [pickRandom(remaining), ...items]);
+  }
+
+  function openMysteryBox(index: number) {
+    setOpenBox(index);
+    setBoxWinner(pickRandom(players));
+    setBoxReward(pickRandom(MYSTERY_REWARDS));
+  }
+
+  function climbLadder() {
+    if (ladderWinner) return;
+    const player = pickRandom(players);
+    const steps = Math.floor(Math.random() * 6) + 1;
+    const nextScores = [...activeLadderScores];
+    nextScores[player.number - 1] = Math.min(20, nextScores[player.number - 1] + steps);
+    setLadderScores(nextScores);
+    setLadderHistory((items) => [`${player.label} climbed ${steps}`, ...items].slice(0, 20));
+    if (nextScores[player.number - 1] >= 20) {
+      setLadderWinner(player);
+    }
+  }
+
+  function resetLadder() {
+    setLadderScores([]);
+    setLadderWinner(null);
+    setLadderHistory([]);
+  }
+
+  function passHotSeat() {
+    const passCount = Math.floor(Math.random() * 21) + 5;
+    const startIndex = Math.floor(Math.random() * players.length);
+    const path = Array.from({ length: Math.min(passCount + 1, 18) }, (_, index) => {
+      return players[(startIndex + index) % players.length];
+    });
+    const winner = players[(startIndex + passCount) % players.length];
+    setHotSeatPasses(passCount);
+    setHotSeatPath(path);
+    setHotSeatWinner(winner);
   }
 
   return (
@@ -316,6 +402,13 @@ export function OfflinePartyGame() {
                 value={cardPlayer}
               />
             </label>
+          )}
+
+          {mode === "number-ladder" && (
+            <div className="rounded-lg border border-white/10 bg-white/[0.03] p-3">
+              <p className="text-xs font-bold uppercase tracking-[0.16em] text-white/40">Ladder target</p>
+              <p className="mt-1 text-sm font-bold text-white/75">First player to 20 wins.</p>
+            </div>
           )}
 
           <div>
@@ -493,6 +586,136 @@ export function OfflinePartyGame() {
               </div>
               <div className="mt-4 flex max-h-32 flex-wrap gap-1.5 overflow-auto rounded-lg border border-white/10 bg-white/[0.03] p-3">
                 {calledNumbers.length ? calledNumbers.map((number) => <NumberPill key={number} active>{number}</NumberPill>) : <p className="text-sm text-white/50">No calls yet.</p>}
+              </div>
+            </div>
+          )}
+
+          {mode === "mystery-box" && (
+            <div>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.22em] text-neon">Mystery Box</p>
+                  <h2 className="mt-1 text-2xl font-black text-white">Open a surprise box</h2>
+                </div>
+                <button
+                  className="rounded-lg border border-white/10 px-4 py-3 font-black text-white/75 hover:bg-white/10"
+                  onClick={() => {
+                    setOpenBox(null);
+                    setBoxWinner(null);
+                    setBoxReward("");
+                  }}
+                  type="button"
+                >
+                  Reset Box
+                </button>
+              </div>
+              <div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3">
+                {MYSTERY_BOX_LABELS.map((label, index) => (
+                  <button
+                    className={`rounded-lg border p-4 text-left ${
+                      openBox === index
+                        ? "border-gold/45 bg-gold/15 text-gold"
+                        : "border-white/10 bg-ink/75 text-white/75 hover:bg-white/[0.06]"
+                    }`}
+                    key={label}
+                    onClick={() => openMysteryBox(index)}
+                    type="button"
+                  >
+                    <span className="block font-black">{label}</span>
+                    <span className="mt-1 block text-xs text-white/45">Box {index + 1}</span>
+                  </button>
+                ))}
+              </div>
+              <div className="mt-5 rounded-lg border border-white/10 bg-ink/70 p-5 text-center">
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-white/45">Winner</p>
+                <p className="mt-3 font-mono text-6xl font-black text-neon">{boxWinner?.number || "--"}</p>
+                <p className="mt-2 text-xl font-black text-white">{boxWinner?.label || "Choose a box"}</p>
+                {boxReward && <p className="mt-2 text-sm font-bold text-gold">{boxReward}</p>}
+              </div>
+            </div>
+          )}
+
+          {mode === "number-ladder" && (
+            <div>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.22em] text-neon">Number Ladder</p>
+                  <h2 className="mt-1 text-2xl font-black text-white">Race to the top</h2>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    className="rounded-lg bg-neon px-5 py-3 font-black text-ink hover:brightness-110 disabled:opacity-45"
+                    disabled={!!ladderWinner}
+                    onClick={climbLadder}
+                    type="button"
+                  >
+                    Climb
+                  </button>
+                  <button className="rounded-lg border border-white/10 px-4 py-3 font-black text-white/75 hover:bg-white/10" onClick={resetLadder} type="button">
+                    Reset
+                  </button>
+                </div>
+              </div>
+              {ladderWinner && (
+                <div className="mt-5 rounded-lg border border-neon/30 bg-neon/10 p-4">
+                  <p className="text-xs font-black uppercase tracking-[0.18em] text-neon">Winner</p>
+                  <p className="mt-2 text-xl font-black text-white">
+                    {ladderWinner.number} - {ladderWinner.label}
+                  </p>
+                </div>
+              )}
+              <div className="mt-5 max-h-96 space-y-2 overflow-auto">
+                {players.slice(0, 60).map((player) => {
+                  const score = activeLadderScores[player.number - 1] || 0;
+                  return (
+                    <div className="rounded-lg border border-white/10 bg-ink/70 p-3" key={player.number}>
+                      <div className="flex items-center justify-between gap-3">
+                        <p className="text-sm font-bold text-white/80">
+                          {player.number}. {player.label}
+                        </p>
+                        <p className="font-mono text-sm font-black text-gold">{score}/20</p>
+                      </div>
+                      <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/10">
+                        <div className="h-full bg-neon" style={{ width: `${Math.min(100, (score / 20) * 100)}%` }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+              <HistoryList title="Climb history" items={ladderHistory} />
+            </div>
+          )}
+
+          {mode === "hot-seat" && (
+            <div>
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.22em] text-neon">Hot Seat Pass</p>
+                  <h2 className="mt-1 text-2xl font-black text-white">Reveal the final holder</h2>
+                </div>
+                <button className="rounded-lg bg-neon px-5 py-3 font-black text-ink hover:brightness-110" onClick={passHotSeat} type="button">
+                  Start Pass
+                </button>
+              </div>
+              <div className="mt-5 rounded-lg border border-white/10 bg-ink/70 p-6 text-center">
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-white/45">Final holder</p>
+                <p className="mt-3 font-mono text-7xl font-black text-gold">{hotSeatWinner?.number || "--"}</p>
+                <p className="mt-2 text-xl font-black text-white">{hotSeatWinner?.label || "Waiting for pass"}</p>
+                {hotSeatPasses > 0 && <p className="mt-2 text-sm font-bold text-neon">{hotSeatPasses} passes</p>}
+              </div>
+              <div className="mt-5 rounded-lg border border-white/10 bg-white/[0.03] p-4">
+                <p className="text-xs font-black uppercase tracking-[0.18em] text-white/45">Pass path</p>
+                <div className="mt-3 flex flex-wrap gap-1.5">
+                  {hotSeatPath.length ? (
+                    hotSeatPath.map((player, index) => (
+                      <NumberPill key={`${player.number}-${index}`} active={index === hotSeatPath.length - 1}>
+                        {player.number}
+                      </NumberPill>
+                    ))
+                  ) : (
+                    <p className="text-sm text-white/50">No pass yet.</p>
+                  )}
+                </div>
               </div>
             </div>
           )}
