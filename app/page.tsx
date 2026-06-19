@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Countdown } from "@/components/Countdown";
 import { GameRoomCard } from "@/components/GameRoomCard";
 import { NumberDisplay } from "@/components/NumberDisplay";
-import { ResultTable } from "@/components/ResultTable";
+import { PaginatedResultsTable } from "@/components/PaginatedResultsTable";
 import { getCurrentStatus } from "@/lib/draw";
 import { formatDrawTime } from "@/lib/format";
 
@@ -52,9 +52,9 @@ export default async function HomePage() {
           </div>
           <div className="mt-6 grid gap-3 sm:grid-cols-2">
             <div className="rounded-lg border border-white/10 bg-ink/80 p-4">
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/45">Next Draw</p>
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/45">Next Result</p>
               <p className="mt-2 text-lg font-black text-neon">{formatDrawTime(status.nextDrawTime)}</p>
-              <p className="mt-1 text-sm text-white/60">Draw opens when the countdown reaches zero</p>
+              <p className="mt-1 text-sm text-white/60">{status.game.name} opens when the countdown reaches zero</p>
             </div>
             <div className="rounded-lg border border-white/10 bg-ink/80 p-4">
               <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/45">Status</p>
@@ -73,7 +73,15 @@ export default async function HomePage() {
             gameName={status.latest?.gameName || status.game.name}
           />
           <div className="rounded-xl border border-white/10 bg-panel/75 p-5">
-            <p className="text-xs font-bold uppercase tracking-[0.22em] text-white/45">Countdown</p>
+            <div className="flex flex-wrap items-start justify-between gap-2">
+              <div>
+                <p className="text-xs font-bold uppercase tracking-[0.22em] text-white/45">Next Result</p>
+                <p className="mt-1 text-sm font-black text-neon">{formatDrawTime(status.nextDrawTime)}</p>
+              </div>
+              <span className="rounded-md border border-gold/25 bg-gold/10 px-3 py-2 text-xs font-black uppercase tracking-[0.12em] text-gold">
+                {status.game.name}
+              </span>
+            </div>
             <div className="mt-4">
               <Countdown target={status.nextDrawTime} />
             </div>
@@ -128,7 +136,7 @@ export default async function HomePage() {
             View All Results
           </Link>
         </div>
-        <ResultTable results={status.recent} />
+        <PaginatedResultsTable results={status.recent} />
       </section>
     </div>
   );

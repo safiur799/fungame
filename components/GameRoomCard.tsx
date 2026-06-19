@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { Countdown } from "@/components/Countdown";
 import type { CurrentDrawStatus } from "@/types/result";
 import { formatDrawTime } from "@/lib/format";
 
@@ -77,14 +78,46 @@ export function GameRoomCard({ room }: { room: GameRoom }) {
         </button>
       </div>
 
-      <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        <div className="rounded-lg border border-white/10 bg-white/[0.03] p-3">
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-white/40">Next Result</p>
-          <p className="mt-1 text-sm font-bold text-neon">{formatDrawTime(room.nextDrawTime)}</p>
+      <div className="mt-4 rounded-lg border border-white/10 bg-white/[0.03] p-3">
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-white/40">Next Winning Result</p>
+            <p className="mt-1 text-sm font-bold text-neon">{formatDrawTime(room.nextDrawTime)}</p>
+          </div>
+          <select
+            aria-label={`${room.game.name} result timeline`}
+            className="rounded-md border border-white/10 bg-ink px-3 py-2 text-sm font-bold text-white/75 outline-none ring-neon/40 focus:ring-2"
+            defaultValue={room.nextDrawTime}
+          >
+            <option value={room.nextDrawTime}>Next: {formatDrawTime(room.nextDrawTime)}</option>
+            {room.schedule.map((time) => (
+              <option key={time} value={time}>
+                Daily {time}
+              </option>
+            ))}
+          </select>
         </div>
-        <div className="rounded-lg border border-white/10 bg-white/[0.03] p-3">
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-white/40">Result Times</p>
-          <p className="mt-1 text-sm font-bold text-white/75">{room.schedule.join(", ")}</p>
+        <div className="mt-3">
+          <Countdown target={room.nextDrawTime} compact />
+        </div>
+        <div className="mt-3 border-t border-white/10 pt-3">
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-xs font-bold uppercase tracking-[0.16em] text-white/40">Past Winning Results</p>
+            <div className="flex flex-wrap gap-1.5">
+              {room.pastResults.length ? (
+                room.pastResults.map((result) => (
+                  <span
+                    className="rounded border border-gold/25 bg-gold/10 px-2 py-1 font-mono text-xs font-black text-gold"
+                    key={result.id}
+                  >
+                    {result.winningNumber}
+                  </span>
+                ))
+              ) : (
+                <span className="font-mono text-sm font-bold text-white/45">--</span>
+              )}
+            </div>
+          </div>
         </div>
       </div>
     </div>

@@ -40,6 +40,7 @@ export type CurrentDrawStatus = {
   games: Array<{
     game: Game;
     latest: Result | null;
+    pastResults: Result[];
     nextDrawTime: string;
     nextDrawNumber: string;
     schedule: string[];

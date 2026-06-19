@@ -170,11 +170,12 @@ export async function getCurrentStatus(): Promise<CurrentDrawStatus> {
   const defaultGame = games.find((game) => game.id === DEFAULT_GAME_ID) || games[0];
   const gameStatuses = await Promise.all(
     games.map(async (game) => {
-      const [latestDoc] = await collection.find({ gameId: game.id }).sort({ drawTime: -1 }).limit(1).toArray();
+      const gameDocs = await collection.find({ gameId: game.id }).sort({ drawTime: -1 }).limit(4).toArray();
       const nextDrawTime = getNextDrawTimeForGame(game);
       return {
         game: serializeGame(game),
-        latest: latestDoc ? serializeResult(latestDoc) : null,
+        latest: gameDocs[0] ? serializeResult(gameDocs[0]) : null,
+        pastResults: gameDocs.slice(1).map(serializeResult),
         nextDrawTime: nextDrawTime.toISOString(),
         nextDrawNumber: makeDrawNumber(nextDrawTime),
         schedule: game.drawTimes
@@ -182,16 +183,20 @@ export async function getCurrentStatus(): Promise<CurrentDrawStatus> {
     })
   );
   const defaultStatus = gameStatuses.find((status) => status.game.id === defaultGame.id) || gameStatuses[0];
-  const docs = await collection.find({ gameId: defaultGame.id }).sort({ drawTime: -1 }).limit(20).toArray();
+  const upcomingStatus =
+    [...gameStatuses].sort((left, right) => {
+      return new Date(left.nextDrawTime).getTime() - new Date(right.nextDrawTime).getTime();
+    })[0] || defaultStatus;
+  const docs = await collection.find({}).sort({ drawTime: -1 }).limit(20).toArray();
   const recent = docs.map(serializeResult);
   return {
     latest: recent[0] || null,
     recent,
-    nextDrawTime: defaultStatus.nextDrawTime,
-    nextDrawNumber: defaultStatus.nextDrawNumber,
+    nextDrawTime: upcomingStatus.nextDrawTime,
+    nextDrawNumber: upcomingStatus.nextDrawNumber,
     serverTime: new Date().toISOString(),
-    schedule: defaultGame.drawTimes,
-    game: serializeGame(defaultGame),
+    schedule: upcomingStatus.schedule,
+    game: upcomingStatus.game,
     games: gameStatuses
   };
 }

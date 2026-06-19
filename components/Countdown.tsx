@@ -10,7 +10,7 @@ function getRemaining(target: string) {
   return { hours, minutes, seconds, complete: diff === 0 };
 }
 
-export function Countdown({ target }: { target: string }) {
+export function Countdown({ target, compact = false }: { target: string; compact?: boolean }) {
   const [remaining, setRemaining] = useState(() => getRemaining(target));
 
   useEffect(() => {
@@ -28,13 +28,16 @@ export function Countdown({ target }: { target: string }) {
   );
 
   return (
-    <div className="grid grid-cols-3 gap-3" aria-label="Countdown to next draw">
+    <div className={`grid grid-cols-3 ${compact ? "gap-1.5" : "gap-3"}`} aria-label="Countdown to next draw">
       {units.map(([label, value]) => (
-        <div key={label} className="rounded-lg border border-white/10 bg-white/[0.04] p-3 text-center">
-          <div className="font-mono text-2xl font-black text-white sm:text-3xl">
+        <div
+          key={label}
+          className={`rounded-lg border border-white/10 bg-white/[0.04] text-center ${compact ? "p-2" : "p-3"}`}
+        >
+          <div className={`font-mono font-black text-white ${compact ? "text-lg" : "text-2xl sm:text-3xl"}`}>
             {String(value).padStart(2, "0")}
           </div>
-          <div className="mt-1 text-[11px] font-bold uppercase tracking-[0.18em] text-white/45">{label}</div>
+          <div className="mt-1 text-[10px] font-bold uppercase tracking-[0.14em] text-white/45">{label}</div>
         </div>
       ))}
       {remaining.complete && <span className="sr-only">Draw time reached. Refresh for latest result.</span>}
