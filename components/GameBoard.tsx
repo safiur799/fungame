@@ -10,13 +10,6 @@ type MeResponse = {
   status: GameStatus;
 };
 
-const FALLBACK_WINNER_NAMES = ["Amit", "Ravi", "Rahul", "Suman", "Arif", "Kabir", "Nirob", "Imran"];
-
-function fallbackWinnerName(seed: string) {
-  const total = Array.from(seed).reduce((sum, char) => sum + char.charCodeAt(0), 0);
-  return FALLBACK_WINNER_NAMES[total % FALLBACK_WINNER_NAMES.length];
-}
-
 export function GameBoard({ initialUser, initialStatus }: { initialUser: SessionUser | null; initialStatus: GameStatus }) {
   const [user, setUser] = useState(initialUser);
   const [status, setStatus] = useState(initialStatus);
@@ -31,7 +24,6 @@ export function GameBoard({ initialUser, initialStatus }: { initialUser: Session
   const gameRunning = status.game.active !== false;
   const entryLocked = Date.parse(status.entryClosesAt) <= nowMs;
   const latestResult = status.recent[0];
-  const latestWinnerName = latestResult?.winners?.[0]?.username || (latestResult ? fallbackWinnerName(latestResult.drawNumber) : "");
   const selected = useMemo(
     () =>
       Object.entries(selectedCounts).flatMap(([number, count]) => Array.from({ length: count }, () => Number(number))),
@@ -279,14 +271,11 @@ export function GameBoard({ initialUser, initialStatus }: { initialUser: Session
           {latestResult && (
             <div className="mt-3 rounded-lg border border-gold/30 bg-gold/10 p-4">
               <p className="text-xs font-bold uppercase tracking-[0.18em] text-gold">Latest winner</p>
-              <div className="mt-2 flex items-end justify-between gap-3">
+              <div className="mt-2">
                 <div>
                   <p className="font-mono text-5xl font-black leading-none text-white">#{latestResult.winningNumber}</p>
                   <p className="mt-2 break-all font-mono text-xs text-white/55">{latestResult.drawNumber}</p>
                 </div>
-                <span className="max-w-[120px] break-words rounded-md border border-gold/30 px-3 py-2 text-right text-xs font-black text-gold">
-                  {latestWinnerName}
-                </span>
               </div>
             </div>
           )}
