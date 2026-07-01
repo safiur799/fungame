@@ -13,6 +13,7 @@ export const MAX_NUMBER = 12;
 export const ENTRY_POINTS = 10;
 export const WIN_POINTS = 80;
 export const ENTRY_LOCK_SECONDS = 30;
+export const HISTORY_DAYS = 2;
 
 type BetDocument = {
   id: string;
@@ -111,6 +112,12 @@ function zonedDateToUtc(year: number, month: number, day: number, hour: number, 
 
 function addMinutes(date: Date, minutes: number) {
   return new Date(date.getTime() + minutes * 60 * 1000);
+}
+
+function getHistoryStart(now = new Date()) {
+  const parts = getParts(now);
+  const todayStart = zonedDateToUtc(parts.year, parts.month, parts.day, 0);
+  return addMinutes(todayStart, -(HISTORY_DAYS - 1) * 24 * 60);
 }
 
 export function getRoundForSettings(settings: Pick<GameSettingsDocument, "durationMinutes">, now = new Date()) {
@@ -362,6 +369,7 @@ export async function listBets(filter: Filter<BetDocument> = {}, limit = 200) {
 }
 
 export async function getUserGameHistory(userId: string, limit = 100): Promise<UserGameHistoryItem[]> {
+  const historyStart = getHistoryStart();
   const betCollection = await betsCollection();
   const bets = await betCollection.find({ userId }).sort({ createdAt: -1 }).limit(1000).toArray();
   const grouped = new Map<string, BetDocument[]>();
@@ -373,7 +381,7 @@ export async function getUserGameHistory(userId: string, limit = 100): Promise<U
 
   const resultCollection = await gameResultsCollection();
   const results = await resultCollection
-    .find({ gameId: GAME_ID, drawNumber: { $in: roundIds } })
+    .find({ gameId: GAME_ID, drawNumber: { $in: roundIds }, drawTime: { $gte: historyStart } })
     .sort({ drawTime: -1 })
     .limit(limit)
     .toArray();

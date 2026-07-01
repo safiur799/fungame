@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { Countdown } from "./Countdown";
 import type { Bet, GameStatus, SessionUser } from "@/types/result";
@@ -8,6 +9,13 @@ type MeResponse = {
   user: SessionUser | null;
   status: GameStatus;
 };
+
+const FALLBACK_WINNER_NAMES = ["Amit", "Ravi", "Rahul", "Suman", "Arif", "Kabir", "Nirob", "Imran"];
+
+function fallbackWinnerName(seed: string) {
+  const total = Array.from(seed).reduce((sum, char) => sum + char.charCodeAt(0), 0);
+  return FALLBACK_WINNER_NAMES[total % FALLBACK_WINNER_NAMES.length];
+}
 
 export function GameBoard({ initialUser, initialStatus }: { initialUser: SessionUser | null; initialStatus: GameStatus }) {
   const [user, setUser] = useState(initialUser);
@@ -22,6 +30,8 @@ export function GameBoard({ initialUser, initialStatus }: { initialUser: Session
   const canSeeOwnPoints = Boolean(user);
   const gameRunning = status.game.active !== false;
   const entryLocked = Date.parse(status.entryClosesAt) <= nowMs;
+  const latestResult = status.recent[0];
+  const latestWinnerName = latestResult?.winners?.[0]?.username || (latestResult ? fallbackWinnerName(latestResult.drawNumber) : "");
   const selected = useMemo(
     () =>
       Object.entries(selectedCounts).flatMap(([number, count]) => Array.from({ length: count }, () => Number(number))),
@@ -110,26 +120,26 @@ export function GameBoard({ initialUser, initialStatus }: { initialUser: Session
 
   return (
     <div className="space-y-6">
-      <section className="grid gap-5 lg:grid-cols-[1.2fr_.8fr]">
-        <div className="rounded-xl border border-white/10 bg-panel/80 p-5 sm:p-7">
+      <section className="grid gap-4 lg:grid-cols-[1.2fr_.8fr] lg:gap-5">
+        <div className="rounded-xl border border-white/10 bg-panel/80 p-4 sm:p-7">
           <p className="text-xs font-black uppercase tracking-[0.22em] text-neon">{status.game.durationMinutes || 5} min 1-12 game</p>
-          <h1 className="mt-3 text-4xl font-black text-white sm:text-6xl">Pick numbers.</h1>
-          <p className="mt-4 max-w-2xl text-sm leading-6 text-white/65">
+          <h1 className="mt-3 text-4xl font-black leading-none text-white sm:text-6xl">Pick numbers.</h1>
+          <p className="mt-4 max-w-2xl text-sm leading-6 text-white/65 sm:text-base">
             One game only. Numbers 1 to 12. Choose one number or repeat same number multiple times before result.
           </p>
           <div className="mt-5 grid max-w-xl gap-3 sm:grid-cols-2">
-            <div className="rounded-lg border border-white/10 bg-ink/75 p-4">
+            <div className="rounded-lg border border-white/10 bg-ink/75 p-3 sm:p-4">
               <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/45">Round</p>
-              <p className="mt-2 font-mono text-lg font-black text-white">{status.roundId}</p>
+              <p className="mt-2 break-all font-mono text-base font-black text-white sm:text-lg">{status.roundId}</p>
             </div>
-            <div className="rounded-lg border border-white/10 bg-ink/75 p-4">
+            <div className="rounded-lg border border-white/10 bg-ink/75 p-3 sm:p-4">
               <p className="text-xs font-bold uppercase tracking-[0.18em] text-white/45">Next result</p>
               <Countdown target={status.nextDrawTime} />
             </div>
           </div>
         </div>
 
-        <div className="rounded-xl border border-white/10 bg-white/[0.04] p-5">
+        <div className="rounded-xl border border-white/10 bg-white/[0.04] p-4 sm:p-5">
           {user ? (
             <div className="space-y-3">
               <div className="flex items-start justify-between gap-3">
@@ -138,13 +148,18 @@ export function GameBoard({ initialUser, initialStatus }: { initialUser: Session
                   <h2 className="mt-1 text-2xl font-black">{user.username}</h2>
                   <p className="text-sm text-white/55">{user.role.replace("_", " ")}</p>
                 </div>
-                <button className="rounded-lg border border-white/10 px-4 py-2 text-sm font-black" onClick={logout} type="button">
-                  Logout
-                </button>
+                <div className="grid gap-2">
+                  <Link className="rounded-lg border border-gold/30 px-4 py-2 text-center text-sm font-black text-gold" href="/my-history">
+                    My History
+                  </Link>
+                  <button className="rounded-lg border border-white/10 px-4 py-2 text-sm font-black" onClick={logout} type="button">
+                    Logout
+                  </button>
+                </div>
               </div>
               {canSeeOwnPoints && (
                 <>
-                  <div className="rounded-lg border border-neon/25 bg-neon/10 p-4">
+                  <div className="rounded-lg border border-neon/25 bg-neon/10 p-3 sm:p-4">
                     <p className="text-xs font-bold uppercase tracking-[0.18em] text-neon">Point balance</p>
                     <p className="mt-1 font-mono text-3xl font-black text-white">{user.points ?? 0}</p>
                   </div>
@@ -179,14 +194,14 @@ export function GameBoard({ initialUser, initialStatus }: { initialUser: Session
         </div>
       </section>
 
-      <section className="rounded-xl border border-white/10 bg-panel/80 p-5">
-        <div className="grid grid-cols-3 gap-3 sm:grid-cols-4 md:grid-cols-6">
+      <section className="rounded-xl border border-white/10 bg-panel/80 p-4 sm:p-5">
+        <div className="grid grid-cols-4 gap-2 sm:grid-cols-4 sm:gap-3 md:grid-cols-6">
           {Array.from({ length: 12 }, (_, index) => index + 1).map((number) => {
             const count = selectedCounts[number] || 0;
             return (
               <div
                 key={number}
-                className={`relative aspect-square rounded-lg border p-3 transition ${
+                className={`relative aspect-square rounded-lg border p-2 transition sm:p-3 ${
                   count
                     ? "border-neon bg-neon text-ink"
                     : "border-white/10 bg-ink/75 text-white hover:border-neon/60 disabled:opacity-50"
@@ -198,17 +213,17 @@ export function GameBoard({ initialUser, initialStatus }: { initialUser: Session
                   disabled={!user || !gameRunning || entryLocked}
                   className="flex h-full w-full flex-col items-start justify-center text-left disabled:opacity-50"
                 >
-                  <span className="block font-mono text-3xl font-black">{number}</span>
+                  <span className="block font-mono text-2xl font-black sm:text-3xl">{number}</span>
                   {canSeeBoardPoints && (
                     <span className="mt-2 block text-xs font-bold">{status.numberTotals[String(number)] || 0} pts</span>
                   )}
-                  {count > 0 && <span className="mt-3 rounded-md bg-ink/20 px-2 py-1 text-xs font-black">x{count}</span>}
+                  {count > 0 && <span className="mt-2 rounded-md bg-ink/20 px-2 py-1 text-xs font-black sm:mt-3">x{count}</span>}
                 </button>
                 {count > 0 && (
                   <button
                     type="button"
                     onClick={() => removeNumber(number)}
-                    className="absolute right-2 top-2 flex h-8 w-8 items-center justify-center rounded-md border border-ink/20 bg-white/20 font-black"
+                    className="absolute right-1 top-1 flex h-7 w-7 items-center justify-center rounded-md border border-ink/20 bg-white/20 font-black sm:right-2 sm:top-2 sm:h-8 sm:w-8"
                     aria-label={`Remove one ${number}`}
                   >
                     -
@@ -233,7 +248,7 @@ export function GameBoard({ initialUser, initialStatus }: { initialUser: Session
                   }`}
           </p>
           <button
-            className="rounded-lg bg-hot px-5 py-3 font-black text-white disabled:opacity-50"
+            className="w-full rounded-lg bg-hot px-5 py-3 font-black text-white disabled:opacity-50 sm:w-auto"
             disabled={!user || !selected.length || loading || !gameRunning || entryLocked}
             onClick={submitBets}
             type="button"
@@ -246,7 +261,7 @@ export function GameBoard({ initialUser, initialStatus }: { initialUser: Session
       <section className="grid gap-5 lg:grid-cols-2">
         <div className="rounded-xl border border-white/10 bg-white/[0.04] p-5">
           <h2 className="text-xl font-black">My Current Numbers</h2>
-          <div className="mt-3 grid gap-2">
+          <div className="mt-3 grid max-h-80 gap-2 overflow-y-auto pr-1">
             {status.myBets.length ? (
               status.myBets.map((bet) => (
                 <div key={bet.id} className="flex justify-between rounded-lg border border-white/10 bg-ink/70 p-3 text-sm">
@@ -261,11 +276,25 @@ export function GameBoard({ initialUser, initialStatus }: { initialUser: Session
         </div>
         <div className="rounded-xl border border-white/10 bg-white/[0.04] p-5">
           <h2 className="text-xl font-black">Recent Results</h2>
-          <div className="mt-3 grid gap-2">
-            {status.recent.slice(0, 6).map((result) => (
-              <div key={result.id} className="flex justify-between rounded-lg border border-white/10 bg-ink/70 p-3 text-sm">
-                <span>{result.drawNumber}</span>
-                <span className="font-mono text-gold">Winner #{result.winningNumber}</span>
+          {latestResult && (
+            <div className="mt-3 rounded-lg border border-gold/30 bg-gold/10 p-4">
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-gold">Latest winner</p>
+              <div className="mt-2 flex items-end justify-between gap-3">
+                <div>
+                  <p className="font-mono text-5xl font-black leading-none text-white">#{latestResult.winningNumber}</p>
+                  <p className="mt-2 break-all font-mono text-xs text-white/55">{latestResult.drawNumber}</p>
+                </div>
+                <span className="max-w-[120px] break-words rounded-md border border-gold/30 px-3 py-2 text-right text-xs font-black text-gold">
+                  {latestWinnerName}
+                </span>
+              </div>
+            </div>
+          )}
+          <div className="mt-3 grid max-h-72 gap-2 overflow-y-auto pr-1">
+            {status.recent.slice(latestResult ? 1 : 0, 7).map((result) => (
+              <div key={result.id} className="grid gap-1 rounded-lg border border-white/10 bg-ink/70 p-3 text-sm sm:grid-cols-[1fr_auto]">
+                <span className="break-all font-mono text-xs text-white/55">{result.drawNumber}</span>
+                <span className="font-mono font-black text-gold">Winner #{result.winningNumber}</span>
               </div>
             ))}
             {!status.recent.length && <p className="text-sm text-white/55">No result yet.</p>}
