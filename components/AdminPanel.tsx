@@ -152,7 +152,7 @@ function UserTable({
   }, [rows, search]);
 
   return (
-    <section className="rounded-xl border border-white/10 bg-panel/80 p-5">
+    <section className="min-w-0 rounded-xl border border-white/10 bg-panel/80 p-5">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <h2 className="text-xl font-black">{title}</h2>
         <input
@@ -219,7 +219,8 @@ function UserTable({
         ))}
         {!visibleRows.length && <p className="rounded-lg border border-white/10 bg-ink/70 p-4 text-sm text-white/55">No records.</p>}
       </div>
-      <div className="mt-4 hidden max-h-[420px] overflow-auto rounded-lg border border-white/10 sm:block">
+      <div className="mt-4 hidden max-w-full overflow-x-auto rounded-lg border border-white/10 sm:block">
+        <div className="max-h-[420px] overflow-y-auto">
         <table className="w-full min-w-[1040px] text-left text-sm">
           <thead className="sticky top-0 z-10 bg-panel text-xs uppercase tracking-[0.14em] text-white/45">
             <tr>
@@ -286,6 +287,7 @@ function UserTable({
             )}
           </tbody>
         </table>
+        </div>
       </div>
     </section>
   );
@@ -540,7 +542,7 @@ export function AdminPanel({ initialUser }: { initialUser: SessionUser | null })
   }
 
   return (
-    <div className="space-y-6">
+    <div className="min-w-0 space-y-6">
       <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
         <div>
           <h1 className="text-3xl font-black">RBAC Admin</h1>
@@ -659,7 +661,7 @@ export function AdminPanel({ initialUser }: { initialUser: SessionUser | null })
         </form>
       )}
 
-      <section className="rounded-xl border border-white/10 bg-panel/80 p-5">
+      <section className="min-w-0 rounded-xl border border-white/10 bg-panel/80 p-5">
         <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
           <div>
             <h2 className="text-xl font-black">Game Result</h2>
@@ -701,7 +703,7 @@ export function AdminPanel({ initialUser }: { initialUser: SessionUser | null })
       />
 
       {adminHistory && (
-        <section className="rounded-xl border border-white/10 bg-panel/80 p-4 sm:p-5">
+        <section className="min-w-0 rounded-xl border border-white/10 bg-panel/80 p-4 sm:p-5">
           <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
             <div>
               <h2 className="text-xl font-black">Admin History</h2>
@@ -732,7 +734,7 @@ export function AdminPanel({ initialUser }: { initialUser: SessionUser | null })
             ))}
           </div>
           <div className="mt-5 grid gap-4 lg:grid-cols-2">
-            <div className="rounded-lg border border-white/10 bg-ink/70 p-4">
+            <div className="min-w-0 rounded-lg border border-white/10 bg-ink/70 p-4">
               <h3 className="font-black">Created Users</h3>
               <div className="mt-3 grid max-h-72 gap-2 overflow-auto pr-1">
                 {adminHistory.users.map((user) => (
@@ -747,7 +749,7 @@ export function AdminPanel({ initialUser }: { initialUser: SessionUser | null })
                 {!adminHistory.users.length && <p className="text-sm text-white/55">No users.</p>}
               </div>
             </div>
-            <div className="rounded-lg border border-white/10 bg-ink/70 p-4">
+            <div className="min-w-0 rounded-lg border border-white/10 bg-ink/70 p-4">
               <h3 className="font-black">Point History</h3>
               <div className="mt-3 grid max-h-72 gap-2 overflow-auto pr-1">
                 {adminHistory.transactions.map((item) => (
@@ -770,7 +772,7 @@ export function AdminPanel({ initialUser }: { initialUser: SessionUser | null })
       )}
 
       {userHistory && (
-        <section className="rounded-xl border border-white/10 bg-panel/80 p-5">
+        <section className="min-w-0 rounded-xl border border-white/10 bg-panel/80 p-5">
           <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
             <div>
               <h2 className="text-xl font-black">User Game History</h2>
@@ -800,7 +802,8 @@ export function AdminPanel({ initialUser }: { initialUser: SessionUser | null })
               </div>
             ))}
           </div>
-          <div className="mt-5 max-h-[420px] overflow-auto rounded-lg border border-white/10">
+          <div className="mt-5 max-w-full overflow-x-auto rounded-lg border border-white/10">
+            <div className="max-h-[420px] overflow-y-auto">
             <table className="w-full min-w-[920px] text-left text-sm">
               <thead className="sticky top-0 z-10 bg-panel text-xs uppercase tracking-[0.14em] text-white/45">
                 <tr>
@@ -844,12 +847,13 @@ export function AdminPanel({ initialUser }: { initialUser: SessionUser | null })
                 )}
               </tbody>
             </table>
+            </div>
           </div>
         </section>
       )}
 
       {isSuperAdmin && analytics && (
-        <section className="rounded-xl border border-white/10 bg-panel/80 p-5">
+        <section className="min-w-0 rounded-xl border border-white/10 bg-panel/80 p-4 sm:p-5">
           <h2 className="text-xl font-black">Super Admin Analytics</h2>
           <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
             {[
@@ -869,7 +873,7 @@ export function AdminPanel({ initialUser }: { initialUser: SessionUser | null })
           </div>
           <div className="mt-5 grid gap-4">
             {analytics.adminAnalytics.map((admin) => (
-              <div key={admin.adminId} className="rounded-lg border border-white/10 bg-ink/70 p-4">
+              <div key={admin.adminId} className="min-w-0 rounded-lg border border-white/10 bg-ink/70 p-4">
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <p className="text-lg font-black">{admin.adminUsername}</p>
@@ -881,7 +885,8 @@ export function AdminPanel({ initialUser }: { initialUser: SessionUser | null })
                     Given {admin.givenToUsers} · Taken {admin.takenFromUsers} · Lost received {admin.lossReceived}
                   </p>
                 </div>
-                <div className="mt-3 max-h-[320px] overflow-auto rounded-lg border border-white/10">
+                <div className="mt-3 max-w-full overflow-x-auto rounded-lg border border-white/10">
+                  <div className="max-h-[320px] overflow-y-auto">
                   <table className="w-full min-w-[760px] text-left text-xs">
                     <thead className="sticky top-0 z-10 bg-ink uppercase tracking-[0.14em] text-white/45">
                       <tr>
@@ -913,6 +918,7 @@ export function AdminPanel({ initialUser }: { initialUser: SessionUser | null })
                       )}
                     </tbody>
                   </table>
+                  </div>
                 </div>
               </div>
             ))}
@@ -921,11 +927,11 @@ export function AdminPanel({ initialUser }: { initialUser: SessionUser | null })
       )}
 
       {isSuperAdmin && analytics && (
-        <section className="rounded-xl border border-white/10 bg-panel/80 p-5">
+        <section className="min-w-0 rounded-xl border border-white/10 bg-panel/80 p-4 sm:p-5">
           <h2 className="text-xl font-black">Point Flow</h2>
-          <div className="mt-4 grid gap-2">
+          <div className="mt-4 grid max-h-[430px] gap-2 overflow-y-auto pr-1">
             {analytics.recentTransactions.slice(0, 30).map((transaction) => (
-              <div key={transaction.id} className="grid gap-2 rounded-lg border border-white/10 bg-ink/70 p-3 text-sm sm:grid-cols-[1fr_auto]">
+              <div key={transaction.id} className="grid min-w-0 gap-2 rounded-lg border border-white/10 bg-ink/70 p-3 text-sm sm:grid-cols-[minmax(0,1fr)_auto]">
                 <span className="max-h-16 overflow-auto break-words">
                   {transaction.type === "loss" ? "Loss" : transaction.type === "give" ? "Give" : "Take"} · {transaction.actorUsername} →{" "}
                   {transaction.targetUsername}

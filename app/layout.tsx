@@ -26,9 +26,9 @@ export const viewport: Viewport = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body className="font-sans antialiased">
+      <body className="overflow-x-hidden font-sans antialiased">
         <SiteHeader />
-        <main className="mx-auto max-w-6xl px-4 py-6 sm:py-10">{children}</main>
+        <main className="mx-auto w-full max-w-6xl overflow-x-hidden px-4 py-6 sm:py-10">{children}</main>
       </body>
     </html>
   );
