@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { ensureDueDraws } from "@/lib/draw";
 import { env } from "@/lib/env";
+import { settlePreviousRound } from "@/lib/hourly-game";
 
 export const dynamic = "force-dynamic";
 
@@ -12,6 +12,6 @@ export async function GET(request: NextRequest) {
     }
   }
 
-  const created = await ensureDueDraws();
-  return NextResponse.json({ ok: true, createdCount: created.length, created });
+  const result = await settlePreviousRound();
+  return NextResponse.json({ ok: true, result });
 }

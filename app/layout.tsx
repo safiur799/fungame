@@ -5,15 +5,14 @@ import { SiteHeader } from "@/components/SiteHeader";
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"),
   title: {
-    default: "Daily Number Draw",
-    template: "%s | Daily Number Draw"
+    default: "1-12 Number Game",
+    template: "%s | 1-12 Number Game"
   },
-  description:
-    "Daily Number Draw is a fun number picker and public result board with live countdowns and 0 to 10000 results.",
-  keywords: ["number draw", "daily draw", "lucky number", "fun game", "number picker"],
+  description: "5-minute 1-12 number game with RBAC users, wallet, and lowest-total winning result.",
+  keywords: ["number game", "5 minute draw", "rbac game"],
   openGraph: {
-    title: "Daily Number Draw",
-    description: "Pick a number, watch the countdown, and compare it with the daily result.",
+    title: "1-12 Number Game",
+    description: "Pick numbers 1 to 12 and check the 5-minute lowest-total result.",
     type: "website"
   }
 };

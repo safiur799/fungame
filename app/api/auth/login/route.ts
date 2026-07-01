@@ -1,26 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { authCookie, verifyLogin } from "@/lib/admin-auth";
-import { logger } from "@/lib/logger";
+import { authCookie, serializeUser, verifyLogin } from "@/lib/admin-auth";
 import { rateLimit } from "@/lib/rate-limit";
 
 const schema = z.object({
-  username: z.string().min(1).max(80).default("superadmin"),
+  username: z.string().min(1).max(80),
   password: z.string().min(1).max(200)
 });
 
 export async function POST(request: NextRequest) {
-  const limited = rateLimit(request, 10, 60_000);
+  const limited = rateLimit(request, 20, 60_000);
   if (limited) return limited;
 
   try {
     const body = schema.parse(await request.json());
     const user = await verifyLogin(body.username, body.password);
-    if (!user || user.role === "user") {
-      logger.warn("admin.login.denied");
-      return NextResponse.json({ error: "Invalid admin login" }, { status: 401 });
-    }
-    const response = NextResponse.json({ ok: true, user: { id: user.id, username: user.username, role: user.role } });
+    if (!user) return NextResponse.json({ error: "Invalid username or password" }, { status: 401 });
+    const response = NextResponse.json({ ok: true, user: serializeUser(user) });
     response.cookies.set(authCookie.name, authCookie.make(user), {
       httpOnly: true,
       sameSite: "lax",

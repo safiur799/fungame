@@ -1,4 +1,4 @@
-export type DrawStatus = "pending" | "completed";
+import type { Role } from "@/lib/admin-auth";
 
 export type Result = {
   id: string;
@@ -8,6 +8,23 @@ export type Result = {
   winningNumber: string;
   drawTime: string;
   createdAt: string;
+  totalBetPoints?: number;
+  winnerCount?: number;
+  paidPoints?: number;
+  numberTotals?: Record<string, number>;
+  winners?: Array<{
+    userId: string;
+    username: string;
+    entries: number;
+    paidPoints?: number;
+  }>;
+  losses?: Array<{
+    userId: string;
+    username: string;
+    adminId: string;
+    adminUsername: string;
+    lostPoints: number;
+  }>;
 };
 
 export type Game = {
@@ -15,10 +32,39 @@ export type Game = {
   name: string;
   minNumber: number;
   maxNumber: number;
-  drawTimes: string[];
-  active: boolean;
+  drawTimes?: string[];
+  active?: boolean;
+  durationMinutes?: number;
+  entryLockSeconds?: number;
+  createdAt?: string;
+  updatedAt?: string;
+  entryPoints?: number;
+  winPoints?: number;
+};
+
+export type Bet = {
+  id: string;
+  roundId: string;
+  userId: string;
+  username: string;
+  number: number;
+  points?: number;
   createdAt: string;
-  updatedAt: string;
+};
+
+export type SessionUser = {
+  id: string;
+  username: string;
+  role: Role;
+  points?: number;
+  active: boolean;
+  createdBy?: string;
+  createdByUsername?: string;
+  pointsGivenByActor?: number;
+  pointsTakenByActor?: number;
+  pointsLost?: number;
+  pointsWon?: number;
+  gameProfit?: number;
 };
 
 export type PaginatedResults = {
@@ -27,6 +73,18 @@ export type PaginatedResults = {
   pageSize: number;
   total: number;
   totalPages: number;
+};
+
+export type GameStatus = {
+  game: Game;
+  roundId: string;
+  roundStart: string;
+  nextDrawTime: string;
+  entryClosesAt: string;
+  serverTime: string;
+  numberTotals: Record<string, number>;
+  recent: Result[];
+  myBets: Bet[];
 };
 
 export type CurrentDrawStatus = {
